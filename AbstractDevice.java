@@ -35,11 +35,11 @@ public static final String[] CONTROL_CHARACTERS = {
 
     public abstract void Processing(String s);
 
-    public AbstractDevice() {
-
+    public AbstractDevice(Communicator c, Connection connection, int idDevice) {
+       // параметры коммуникации с прибором
     }
-  
-    protected void mSaveResult(String examid, String analogy, String result, String flag) {
+    
+   protected void mSaveResults(Result result) {
     //TO DO something
     }
     
