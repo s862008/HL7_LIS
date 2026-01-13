@@ -93,6 +93,12 @@ public abstract class HL7Device extends AbstractDevice {
             case "NK1":
                 parseNK1(fields);
                 break;
+                case "ERR":
+                parseERR(fields);
+                break;
+            case "DSC":
+                parseDSC(fields);
+                break;
             default:
                 System.err.println("Неизвестный сегмент: " + segmentName);
                 break;
@@ -292,6 +298,58 @@ public abstract class HL7Device extends AbstractDevice {
             }
         } catch (ArrayIndexOutOfBoundsException e) {
             System.err.println("Внимание! неполное сообщение сегмента NK1");
+        }
+    }
+    private void parseERR(String[] fields) {
+        try {
+            System.err.println("ERROR SEGMENT DETECTED:");
+            if (fields.length > 1) {
+
+                String errorCode = fields.length > 3 ? fields[3] : "";
+                String severity = fields.length > 4 ? fields[4] : "";
+                String errorMessage = fields.length > 8 ? fields[8] : "";
+                String diagnosticInfo = fields.length > 7 ? fields[7] : "";
+
+                System.err.println("\tError Code: " + errorCode);
+                System.err.println("\tSeverity: " + getErrorSeverity(severity));
+                System.err.println("\tMessage: " + errorMessage);
+                System.err.println("\tDiagnostic: " + diagnosticInfo);
+
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println("Внимание! неполное сообщение сегмента ERR");
+        }
+    }
+
+    private void parseDSC(String[] fields) {
+        try {
+            System.out.println("CONTINUATION POINTER:");
+            if (fields.length > 1) {
+
+                String continuationPointer = fields[1];
+                String continuationStyle = fields.length > 2 ? fields[2] : "";
+
+                System.out.println("\tContinuation Pointer: " + continuationPointer);
+                System.out.println("\tContinuation Style: " + continuationStyle);
+
+            }
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println("Внимание! неполное сообщение сегмента DSC");
+        }
+    }
+
+    private String getErrorSeverity(String severityCode) {
+        switch (severityCode) {
+            case "I":
+                return "Information";
+            case "W":
+                return "Warning";
+            case "E":
+                return "Error";
+            case "F":
+                return "Fatal Error";
+            default:
+                return "Unknown";
         }
     }
 }
