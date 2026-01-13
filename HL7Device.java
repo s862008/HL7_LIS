@@ -99,6 +99,18 @@ public abstract class HL7Device extends AbstractDevice {
             case "DSC":
                 parseDSC(fields);
                 break;
+            case "QRD":
+                parseQRD(fields);
+                break;
+            case "QRF":
+                parseQRF(fields);
+                break;
+            case "QPD":
+                parseQPD(fields);
+                break;
+            case "RCP":
+                parseRCP(fields);
+                break;
             default:
                 System.err.println("Неизвестный сегмент: " + segmentName);
                 break;
@@ -352,7 +364,71 @@ public abstract class HL7Device extends AbstractDevice {
                 return "Unknown";
         }
     }
+    // Методы для парсинга этих сегментов:
+protected void parseQRD(String[] fields) {
+    try {
+        System.out.println("QUERY DEFINITION (QRD - Legacy):");
+        if (fields.length > 1) {
+            System.out.println("\tQuery Date/Time: " + fields[1]);
+            System.out.println("\tQuery Format: " + fields[2]);
+            System.out.println("\tQuery Priority: " + fields[3]);
+            System.out.println("\tQuery ID: " + fields[4]);
+            
+            if (fields.length > 8) {
+                System.out.println("\tPatient Filter: " + fields[8]);
+            }
+        }
+    } catch (ArrayIndexOutOfBoundsException e) {
+        System.err.println("Внимание! неполное сообщение сегмента QRD");
+    }
 }
 
+protected void parseQRF(String[] fields) {
+    try {
+        System.out.println("QUERY FILTER (QRF - Legacy):");
+        if (fields.length > 1) {
+            System.out.println("\tWhere Subject Filter: " + fields[1]);
+            System.out.println("\tStart Date/Time: " + (fields.length > 2 ? fields[2] : ""));
+            System.out.println("\tEnd Date/Time: " + (fields.length > 3 ? fields[3] : ""));
+        }
+    } catch (ArrayIndexOutOfBoundsException e) {
+        System.err.println("Внимание! неполное сообщение сегмента QRF");
+    }
+}
+
+protected void parseQPD(String[] fields) {
+    try {
+        System.out.println("QUERY PARAMETER DEFINITION:");
+        if (fields.length > 1) {
+            System.out.println("\tMessage Query Name: " + fields[1]);
+            System.out.println("\tQuery Tag: " + fields[2]);
+            
+            // Параметры запроса начинаются с поля 3
+            for (int i = 3; i < fields.length; i++) {
+                if (!fields[i].isEmpty()) {
+                    System.out.println("\tParameter " + (i-2) + ": " + fields[i]);
+                }
+            }
+        }
+    } catch (ArrayIndexOutOfBoundsException e) {
+        System.err.println("Внимание! неполное сообщение сегмента QPD");
+    }
+}
+
+protected void parseRCP(String[] fields) {
+    try {
+        System.out.println("RESPONSE CONTROL PARAMETERS:");
+        if (fields.length > 1) {
+            System.out.println("\tQuery Priority: " + fields[1]);
+            System.out.println("\tQuantity Limited Request: " + (fields.length > 2 ? fields[2] : ""));
+            System.out.println("\tResponse Modality: " + (fields.length > 3 ? fields[3] : ""));
+            System.out.println("\tExecution and Delivery Time: " + (fields.length > 4 ? fields[4] : ""));
+            System.out.println("\tModify Indicator: " + (fields.length > 5 ? fields[5] : ""));
+        }
+    } catch (ArrayIndexOutOfBoundsException e) {
+        System.err.println("Внимание! неполное сообщение сегмента RCP");
+    }
+}
 
 }
+
