@@ -9,11 +9,13 @@ public class Result {
     private Map<String, String> results;
     private Map<String, String> refernces;
     private Map<String, String> flags;
+    private Map<String, String> units;
 
     public Result(String labId) {
         results = new HashMap();
         refernces = new HashMap();
         flags = new HashMap();
+        units = new HashMap();
         this.labId = labid;
     }
 
@@ -44,6 +46,14 @@ public class Result {
     public String getFlag(String key) {
         return getFlags().get(key);
     }
+    
+    public void putUnits(String key, String value) {
+        getUnits().put(key, value);
+    }
+    
+    public Map<String, String> getUnits() {
+        return units;
+    }
 
     public Map<String, String> getResults() {
         return results;
@@ -59,7 +69,7 @@ public class Result {
 
     @Override
     public String toString() {
-        return "Result{" + "labId=" + labId + ", results=" + results + ", refernces=" + refernces + ", flags=" + flags + '}';
+        return "Result{" + "labId=" + labId + ", results=" + results + ", refernces=" + refernces + ", flags=" + flags + ", units=" + units + '}';
     }
         
 }
