@@ -3,10 +3,17 @@ package lis.hl7devices;
 import java.util.ArrayList;
 import lis.AbstractDevice;
 import lis.Result;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public abstract class HL7Device extends AbstractDevice {
+    
 
     private Result result;
+    private String originalControlId = "";
+    private String messageType = "";
+    private String sendingApplication = "";
+    private String sendingFacility = "" ;
     ArrayList<String> MessagesFromAnl = new ArrayList<>();
 
     public HL7Device(Communicator c, Connection connection, int idDevice) {
@@ -29,8 +36,20 @@ public abstract class HL7Device extends AbstractDevice {
 
         // ловим  FS, конец сообшения
         if (s.equals(AbstractDevice.CONTROL_CHARACTERS[28])) {
-            parseData(MessagesFromAnl);
-            mSaveResults(result);
+            if (!MessagesFromAnl.isEmpty()) {
+                // Разбор сообшения по сегментно
+                parseData(MessagesFromAnl);
+                 // Валидация и отправка  ACK c ошибкой
+                if (originalControlId.isEmpty()) {
+                    sendACK("AR", "", "Missing MSH segment", "100");
+                    return;
+                }
+                // Успешный ACK
+                sendACK("AA", originalControlId, null, null);
+                // Сохранение полученных данных
+                mSaveResults(result); 
+            }
+            MessagesFromAnl.clear();
             temp = null;
             return;
 
@@ -122,12 +141,16 @@ public abstract class HL7Device extends AbstractDevice {
             System.out.println("NEW MESSAGE: ");
             if (fields.length > 1) {
                 System.out.println("\tSending Application: " + fields[2]);
+                sendingApplication = fields[2];
                 System.out.println("\tSending Facility: " + fields[3]);
+                sendingFacility = fields[3]; 
                 System.out.println("\tReceiving Application: " + fields[4]);
                 System.out.println("\tReceiving Facility: " + fields[5]);
                 System.out.println("\tDate/Time of Message: " + fields[6]);
                 System.out.println("\tMessage Type: " + fields[8]);
+                messageType = fields[8];
                 System.out.println("\tMessage Control ID: " + fields[9]);
+                messageControlId = fields[9];
                 if (fields.length > 10) {
                     System.out.println("\tProcessing ID: " + fields[10]);
                     System.out.println("\tVersion ID: " + fields[11]);
@@ -429,6 +452,66 @@ protected void parseRCP(String[] fields) {
         System.err.println("Внимание! неполное сообщение сегмента RCP");
     }
 }
+    // Метод отправки ACK
+    private void sendACK(String ackCode, String originalMessageId, 
+                        String errorMessage, String errorCode) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
+            String timestamp = sdf.format(new Date());
+            
+            // Генерация уникального ID для ACK
+            String ackMessageId = "ACK_" + System.currentTimeMillis();
+            
+            // Построение сообщения ACK
+            StringBuilder ackMessage = new StringBuilder();
+            
+            // MSH сегмент
+            ackMessage.append("MSH|^~\\&|")
+                      .append("LIS|") // Receiving Application
+                      .append("LIS_FACILITY|") // Receiving Facility
+                      .append(sendingApplication).append("|")
+                      .append(sendingFacility).append("|")
+                      .append(timestamp).append("||")
+                      .append("ACK^R01|")
+                      .append(ackMessageId).append("|")
+                      .append("P|2.4||||||")
+                      .append("UTF-8")
+                      .append(CARRIAGE_RETURN);
+            
+            // MSA сегмент
+            ackMessage.append("MSA|")
+                      .append(ackCode).append("|")
+                      .append(originalMessageId);
+            
+            if (errorMessage != null) {
+                ackMessage.append("|").append(errorMessage);
+            }
+            
+            if (errorCode != null) {
+                ackMessage.append("|||").append(errorCode);
+            }
+            
+            ackMessage.append(CARRIAGE_RETURN);
+            
+            // Отправка через MLLP
+            byte[] messageBytes = ackMessage.toString().getBytes("ISO-8859-1");
+            
+            // Добавляем MLLP envelope
+            ByteArrayOutputStream mllpMessage = new ByteArrayOutputStream();
+            mllpMessage.write(START_BLOCK);
+            mllpMessage.write(messageBytes);
+            mllpMessage.write(END_BLOCK);
+            mllpMessage.write(CARRIAGE_RETURN);
+            
+            // Отправка
+            comm.Write(mllpMessage.toByteArray());
+            
+            System.out.println("Sent ACK: " + ackCode + " for message " + originalMessageId);
+            
+        } catch (Exception e) {
+            System.err.println("Error sending ACK: " + e.getMessage());
+        }
+    }
 
 }
 
