@@ -7,7 +7,10 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public abstract class HL7Device extends AbstractDevice {
-    
+   
+    private static final char CARRIAGE_RETURN = (char) 13;
+    private static final char START_BLOCK = (char) 11;
+    private static final char END_BLOCK = (char) 28;
 
     private Result result;
     private String originalControlId = "";
