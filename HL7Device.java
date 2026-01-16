@@ -17,6 +17,7 @@ public abstract class HL7Device extends AbstractDevice {
     private String messageType = "";
     private String sendingApplication = "";
     private String sendingFacility = "" ;
+    private Boolean isMessageComplete = false;
     ArrayList<String> MessagesFromAnl = new ArrayList<>();
 
     public HL7Device(Communicator c, Connection connection, int idDevice) {
@@ -27,19 +28,46 @@ public abstract class HL7Device extends AbstractDevice {
     public void Processing(String s) {
 
         if (s.equals(AbstractDevice.CONTROL_CHARACTERS[13])) {
-            if (temp != null && temp.length() != 0) {
+            
+           
+           if (temp != null && temp.length() != 0) {
                 MessagesFromAnl.add(temp.toString());
                 temp.setLength(0);
             }
 
             setChanged();
             notifyObservers("\r\n");
+           
+            if (isMessageComplete) {
+                processMessageComplete();
+            }
+ 
             return;
         }
 
         // ловим  FS, конец сообшения
         if (s.equals(AbstractDevice.CONTROL_CHARACTERS[28])) {
-            if (!MessagesFromAnl.isEmpty()) {
+            isMessageComplete = true;
+            temp = null;
+            return;
+
+        }
+
+        // ловим  LT, начало сообшения
+        if (s.equals(AbstractDevice.CONTROL_CHARACTERS[11])) {
+            MessagesFromAnl.clear();
+            isMessageComplete = false;
+            temp = new StringBuffer(0);
+            return;
+        }
+
+        if (temp != null) {
+            temp.append(s);
+        }
+    }
+ 
+   private void processMessageComplete() {
+         if (!MessagesFromAnl.isEmpty()) {
                 // Разбор сообшения по сегментно
                 parseData(MessagesFromAnl);
                  // Валидация и отправка  ACK c ошибкой
@@ -51,24 +79,13 @@ public abstract class HL7Device extends AbstractDevice {
                 sendACK("AA", originalControlId, null, null);
                 // Сохранение полученных данных
                 mSaveResults(result); 
+                
+                isMessageComplete = false;
+                MessagesFromAnl.clear();
             }
-            MessagesFromAnl.clear();
-            temp = null;
-            return;
-
-        }
-
-        // ловим  LT, начало сообшения
-        if (s.equals(AbstractDevice.CONTROL_CHARACTERS[11])) {
-            MessagesFromAnl.clear();
-            temp = new StringBuffer(0);
-            return;
-        }
-
-        if (temp != null) {
-            temp.append(s);
-        }
-    }
+            
+ }
+   
 
   protected void parseData(ArrayList<String> data) {
 
