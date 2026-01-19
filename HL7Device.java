@@ -524,7 +524,7 @@ protected void parseRCP(String[] fields) {
             mllpMessage.write(CARRIAGE_RETURN);
             
             // Отправка
-            comm.Write(mllpMessage.toByteArray());
+            super.write(mllpMessage.toByteArray());
             
             System.out.println("Sent ACK: " + ackCode + " for message " + originalMessageId);
             
