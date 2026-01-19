@@ -43,7 +43,7 @@ public static final String[] CONTROL_CHARACTERS = {
     //TO DO something
     }
     
-    protected boolean Write(byte[] arrb) {
+    protected boolean write(byte[] arrb) {
       // заглушка - здесь реализация отправки сообшения прибору 
         boolean isOK = true; 
         return isOK;
